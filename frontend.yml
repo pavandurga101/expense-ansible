@@ -7,7 +7,45 @@
         name: nginx
         state: latest
 
+    - name: copy Expense Nginx configuration
+      ansible.builtin.copy:
+        src: e.conf
+        dest: /etc/nginx/default.d/expense.conf
+
+    - name: Clean the Old Content
+      ansible.builtin.file:
+        path: usr/share/nginx/html
+        state: absent
+
+    - name: Create a app directory
+      ansible.builtin.file:
+        path: usr/share/nginx/html
+        state: directory
+
+
+    - name: Download and extracxt app content
+      ansible.builtin.unarchive:
+        src: https://expense-artifacts.s3.amazonaws.com/expense-frontend-v2.zip
+        dest: usr/share/nginx/html
+        remote_src: yes
+
     - name: Start Nginx
       ansible.builtin.systemd_service:
         state: started
         name: nginx
+
+
+
+
+
+
+
+
+#  Print_Task_Heading "Download App Content"
+#  curl -o /tmp/${component}.zip https://expense-artifacts.s3.amazonaws.com/expense-${component}-v2.zip &>>$LOG
+#  Check_Status $?
+#
+#  Print_Task_Heading "Extract App Content"
+#  cd ${app_dir} &>>$LOG
+#  unzip /tmp/${component}.zip &>>$LOG
+#  Check_Status $?
