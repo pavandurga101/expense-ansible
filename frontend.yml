@@ -15,7 +15,7 @@
 
     - name: Copy expense Nginx configuration
       ansible.builtin.copy:
-        src: expense.conf
+        src: expense.conf  # Ensure this file exists in the same directory as playbook
         dest: /etc/nginx/default.d/expense.conf
         owner: nginx
         group: nginx
