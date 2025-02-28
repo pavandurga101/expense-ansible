@@ -2,11 +2,14 @@
   hosts: all
   become: yes
   tasks:
-    - name: install nginx
-      ansible.builtin.dnf:
+    - name: Install nginx
+      ansible.builtin.dnf:  # Use 'yum' for older RHEL-based systems
         name: nginx
         state: latest
-    - name: Start nginx
+
+    - name: Enable and start nginx
       ansible.builtin.systemd_service:
+        name: nginx
         state: restarted
-        name: Nginx
+        enabled: yes  # Ensures nginx starts on boot
+
