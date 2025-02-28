@@ -3,34 +3,60 @@
   become: yes
   tasks:
     - name: Install nginx
-      ansible.builtin.dnf:  # Use 'yum' for older RHEL-based systems
+      ansible.builtin.package:
         name: nginx
         state: latest
 
-    - name: copy expense nginx Configuration
-      ansible.builtin.copy:
-      src: expense.conf
-      dest: /etc/nginx/default.d/expense.conf
+    - name: Ensure nginx config directory exists
+      ansible.builtin.file:
+        path: /etc/nginx/default.d
+        state: directory
+        mode: '0755'
 
-    - name: clean the old content
+    - name: Copy expense Nginx configuration
+      ansible.builtin.copy:
+        src: expense.conf
+        dest: /etc/nginx/default.d/expense.conf
+        owner: nginx
+        group: nginx
+        mode: '0644'
+
+    - name: Restart Nginx after config change
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: restarted
+
+    - name: Clean old app content
       ansible.builtin.file:
         path: /usr/share/nginx/html
         state: absent
 
-    - name: create app directory
+    - name: Recreate app directory
       ansible.builtin.file:
         path: /usr/share/nginx/html
         state: directory
+        owner: nginx
+        group: nginx
+        mode: '0755'
 
-    - name: download and extarct app content
+    - name: Remove old app archive
+      ansible.builtin.file:
+        path: /tmp/expense-frontend.zip
+        state: absent
+
+    - name: Download app content
+      ansible.builtin.get_url:
+        url: https://expense-artifacts.s3.amazonaws.com/expense-frontend-v2.zip
+        dest: /tmp/expense-frontend.zip
+
+    - name: Extract app content
       ansible.builtin.unarchive:
-        src: https://expense-artifacts.s3.amazonaws.com/expense-frontend-v2.zip
+        src: /tmp/expense-frontend.zip
         dest: /usr/share/nginx/html
         remote_src: yes
 
-    - name: start nginx
+    - name: Enable and restart nginx
       ansible.builtin.systemd_service:
-        state: restarted
         name: nginx
-
-
+        state: restarted
+        enabled: yes
