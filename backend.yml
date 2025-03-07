@@ -36,6 +36,16 @@
         group: nginx
         mode: '0755'
 
+    - name: Install required MySQL Python package
+      ansible.builtin.dnf:
+        name: python3-PyMySQL
+        state: present
+
+    - name: Install MySQL Client
+      ansible.builtin.dnf:
+        name: mysql
+        state: installed
+
     - name: Download and extract app content
       ansible.builtin.unarchive:
         src: https://expense-artifacts.s3.amazonaws.com/expense-backend-v2.zip
@@ -51,11 +61,6 @@
       ansible.builtin.copy:
         src: backend.service
         dest: /etc/systemd/system/backend.service
-
-    - name: Install MySQL Client
-      ansible.builtin.dnf:
-        name: mysql
-        state: installed
 
     - name: Load database schema
       community.mysql.mysql_db:
