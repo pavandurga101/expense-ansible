@@ -13,9 +13,15 @@
         name: nodejs
         state: installed
 
+    - name: Ensure nginx user exists
+      ansible.builtin.user:
+        name: nginx
+        state: present
+
     - name: Add Application User
       ansible.builtin.user:
         name: expense
+        state: present
 
     - name: Clean old app content
       ansible.builtin.file:
@@ -66,14 +72,3 @@
         state: restarted
         enabled: yes
         daemon_reload: yes
-
-
-
-
-
-
-
-
-
-
-
