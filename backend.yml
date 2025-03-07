@@ -2,7 +2,7 @@
   hosts: all
   become: yes
   tasks:
-    - name: disable default NodeJS Version Module
+    - name: Disable default NodeJS Version Module
       ansible.builtin.shell: dnf module disable nodejs -y
 
     - name: Enable NodeJS module for V20
@@ -10,10 +10,10 @@
 
     - name: Install NodeJS
       ansible.builtin.dnf:
-        - name: nodejs
-          state: installed
+        name: nodejs
+        state: installed
 
-    - name: Adding Application User
+    - name: Add Application User
       ansible.builtin.user:
         name: expense
 
@@ -36,11 +36,10 @@
         dest: /app
         remote_src: yes
 
-    - name: Download NodeJS Dependencies
+    - name: Install NodeJS Dependencies
       community.general.npm:
         path: /app
         state: latest
-
 
     - name: Copy backend service file
       ansible.builtin.copy:
@@ -48,10 +47,11 @@
         dest: /etc/systemd/system/backend.service
 
     - name: Install MySQL Client
-      ansible.builtin.dnf: msql
-      sate: installed
+      ansible.builtin.dnf:
+        name: mysql
+        state: installed
 
-    - name: load schema
+    - name: Load database schema
       community.mysql.mysql_db:
         state: import
         name: all
@@ -60,12 +60,12 @@
         login_password: ExpenseApp@1
         login_host: mysql-dev.pdops.shop
 
-    - name: start backed service
-      ansible.builtin.system_service:
+    - name: Start backend service
+      ansible.builtin.systemd:
         name: backend
         state: restarted
         enabled: yes
-        demon_reload: yes
+        daemon_reload: yes
 
 
 
@@ -77,12 +77,3 @@
 
 
 
-
-#
-#    Print_Task_Heading "Install MySQL Client"
-#    dnf install mysql -y &>>$LOG
-#    Check_Status $?
-#
-#    Print_Task_Heading "Load Schema"
-#    mysql -h mysql-dev.rdevops6a.online -uroot -p${mysql_root_password} < /app/schema/backend.sql &>>$LOG
-#    Check_Status $?
