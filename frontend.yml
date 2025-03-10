@@ -1,18 +1,52 @@
-- name: Frontend setup
+- name: Front setup
   hosts: all
   become: yes
   tasks:
     - name: Install nginx
-      ansible.builtin.dnf:
-         name: nginx
-         state: latest
+      ansible.builtin.package:
+        name: nginx
+        state: latest
 
-    - name: Make sure a service unit is running
-      ansible.builtin.systemd_service:
-         state: started
-         name: nginx
-
-    - name: Remove file (delete file)
+    - name: Ensure nginx config directory exists
       ansible.builtin.file:
-        path: /usr/share/nginx/html/*
+        path: /etc/nginx/default.d
+        state: directory
+        mode: '0755'
+
+    - name: Copy expense Nginx configuration
+      ansible.builtin.copy:
+        src: expense.conf  # Ensure this file exists in the same directory
+        dest: /etc/nginx/default.d/expense.conf
+        owner: nginx
+        group: nginx
+        mode: '0644'
+
+    - name: Restart Nginx after config change
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: restarted
+
+    - name: Clean old app content
+      ansible.builtin.file:
+        path: /usr/share/nginx/html
         state: absent
+
+    - name: Recreate app directory
+      ansible.builtin.file:
+        path: /usr/share/nginx/html
+        state: directory
+        owner: nginx
+        group: nginx
+        mode: '0755'
+
+    - name: Download and extract app content
+      ansible.builtin.unarchive:
+        src: https://expense-artifacts.s3.amazonaws.com/expense-frontend-v2.zip
+        dest: /usr/share/nginx/html
+        remote_src: yes
+
+    - name: Enable and restart Nginx
+      ansible.builtin.systemd_service:
+        name: nginx
+        state: restarted
+        enabled: yes
