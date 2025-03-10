@@ -1,8 +1,6 @@
 - name: MySQL Setup
   hosts: all
   become: yes
-  vars:
-    ansible_python_interpreter: /usr/bin/python3  # Ensure Python 3 is used
   tasks:
     - name: Install MySQL server
       ansible.builtin.dnf:
@@ -14,13 +12,6 @@
         name: mysqld
         state: started
         enabled: yes
-
-    - name: Install MySQL Python dependencies
-      ansible.builtin.pip:
-        name:
-          - PyMySQL
-          - mysqlclient
-        state: present
 
     - name: Wait for MySQL to be ready
       ansible.builtin.wait_for:
