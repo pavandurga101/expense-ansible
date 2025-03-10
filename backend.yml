@@ -4,7 +4,7 @@
   tasks:
     - name: Disable NodeJS dnf module
       ansible.builtin.dnf:
-        name: '@nodejs'
+        name:  nodejs
         state: absent
 
     - name: Enable NodeJS module for v20
