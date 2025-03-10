@@ -62,7 +62,7 @@
     - name: Load Database Schema
       community.mysql.mysql_db:
         state: import
-        name: expense_db  # Replace with the actual database name
+        name: all  # Replace with the actual database name
         target: /app/schema/backend.sql
         login_user: root
         login_password: ExpenseApp@1
