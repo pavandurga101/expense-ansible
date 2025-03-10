@@ -1,20 +1,32 @@
-- name: mysql
+- name: MySQL Setup
   hosts: all
   become: yes
   tasks:
-    - name: install mysql server
+    - name: Install MySQL server
       ansible.builtin.dnf:
         name: mysql-server
-        state: installed
+        state: present
 
-    - name: start mysql
+    - name: Start and Enable MySQL
       ansible.builtin.systemd_service:
         name: mysqld
         state: started
         enabled: yes
 
-    - name: setup mysql password
-      ansible.builtin.shell: mysql_secure_installation --set-root-pass ExpenseApp@1
+    - name: Wait for MySQL to be ready
+      ansible.builtin.wait_for:
+        port: 3306
+        delay: 5
+        timeout: 30
 
-
+    - name: Set MySQL root password
+      community.mysql.mysql_user:
+        name: root
+        host: localhost
+        password: ExpenseApp@1
+        login_user: root
+        login_password: ExpenseApp@1
+        check_implicit_admin: yes
+        priv: "*.*:ALL,GRANT"
+        state: present
 

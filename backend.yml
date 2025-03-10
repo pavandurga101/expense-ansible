@@ -2,26 +2,25 @@
   hosts: all
   become: yes
   tasks:
-    - name: Disable default NodeJS Version Module
-      ansible.builtin.shell: dnf module disable nodejs -y
+    - name: Disable NodeJS dnf module
+      ansible.builtin.dnf:
+        name: '@nodejs'
+        state: absent
 
-    - name: Enable NodeJS module for V20
-      ansible.builtin.shell: dnf module enable nodejs:20 -y
+    - name: Enable NodeJS module for v20
+      ansible.builtin.command:
+        cmd: dnf module enable nodejs:20 -y
+      changed_when: true
 
     - name: Install NodeJS
       ansible.builtin.dnf:
         name: nodejs
-        state: installed
-
-    - name: Ensure nginx user exists
-      ansible.builtin.user:
-        name: nginx
-        state: present
+        state: latest
 
     - name: Add Application User
       ansible.builtin.user:
         name: expense
-        state: present
+        system: yes
 
     - name: Clean old app content
       ansible.builtin.file:
@@ -32,25 +31,17 @@
       ansible.builtin.file:
         path: /app
         state: directory
-        owner: nginx
-        group: nginx
+        owner: expense
+        group: expense
         mode: '0755'
-
-    - name: Install required MySQL Python package
-      ansible.builtin.dnf:
-        name: python3-PyMySQL
-        state: present
-
-    - name: Install MySQL Client
-      ansible.builtin.dnf:
-        name: mysql
-        state: installed
 
     - name: Download and extract app content
       ansible.builtin.unarchive:
         src: https://expense-artifacts.s3.amazonaws.com/expense-backend-v2.zip
         dest: /app
         remote_src: yes
+        owner: expense
+        group: expense
 
     - name: Install NodeJS Dependencies
       community.general.npm:
@@ -61,19 +52,31 @@
       ansible.builtin.copy:
         src: backend.service
         dest: /etc/systemd/system/backend.service
+      notify: Restart Backend Service
 
-    - name: Load database schema
+    - name: Install MySQL client
+      ansible.builtin.dnf:
+        name: mysql
+        state: present
+
+    - name: Load Database Schema
       community.mysql.mysql_db:
         state: import
-        name: all
+        name: expense_db  # Replace with the actual database name
         target: /app/schema/backend.sql
         login_user: root
         login_password: ExpenseApp@1
         login_host: mysql-dev.pdops.shop
 
-    - name: Start backend service
-      ansible.builtin.systemd:
+    - name: Ensure Backend Service is Running
+      ansible.builtin.systemd_service:
+        name: backend
+        state: started
+        enabled: yes
+        daemon-reload: yes
+
+  handlers:
+    - name: Restart Backend Service
+      ansible.builtin.systemd_service:
         name: backend
         state: restarted
-        enabled: yes
-        daemon_reload: yes
