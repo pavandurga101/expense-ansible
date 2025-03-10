@@ -1,11 +1,28 @@
 - name: Backend Setup
   hosts: all
   become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3  # Ensure Python 3 is used
   tasks:
-    - name: Disable NodeJS dnf module
+    - name: Install Python3 and pip
       ansible.builtin.dnf:
-        name:  nodejs
-        state: absent
+        name:
+          - python3
+          - python3-pip
+        state: present
+
+    - name: Install MySQL Python dependencies
+      ansible.builtin.pip:
+        name:
+          - PyMySQL
+          - mysqlclient
+        state: present
+        executable: /usr/bin/pip3
+
+    - name: Reset NodeJS DNF module
+      ansible.builtin.command:
+        cmd: dnf module reset nodejs -y
+      changed_when: true
 
     - name: Enable NodeJS module for v20
       ansible.builtin.command:
@@ -52,6 +69,7 @@
       ansible.builtin.copy:
         src: backend.service
         dest: /etc/systemd/system/backend.service
+        mode: '0644'
       notify: Restart Backend Service
 
     - name: Install MySQL client
@@ -62,7 +80,7 @@
     - name: Load Database Schema
       community.mysql.mysql_db:
         state: import
-        name: all  # Replace with the actual database name
+        name: expense_db  # Change this to your actual database name
         target: /app/schema/backend.sql
         login_user: root
         login_password: ExpenseApp@1
@@ -80,3 +98,4 @@
       ansible.builtin.systemd_service:
         name: backend
         state: restarted
+
