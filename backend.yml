@@ -1,43 +1,21 @@
-- name: Backend Setup
+- name: Backend setup
   hosts: all
   become: yes
-  vars:
-    ansible_python_interpreter: /usr/bin/python3  # Ensure Python 3 is used
   tasks:
-    - name: Install Python3 and pip
-      ansible.builtin.dnf:
-        name:
-          - python3
-          - python3-pip
-        state: present
+    - name: Disabla default nodejs
+      ansible.builtin.shell: dnf module disable nodejs -y
 
-    - name: Install MySQL Python dependencies
-      ansible.builtin.pip:
-        name:
-          - PyMySQL
-          - mysqlclient
-        state: present
-        executable: /usr/bin/pip3
+    - name: enable nodejs
+      ansible.builtin.shell: dnf module disable nodejs -y
 
-    - name: Reset NodeJS DNF module
-      ansible.builtin.command:
-        cmd: dnf module reset nodejs -y
-      changed_when: true
-
-    - name: Enable NodeJS module for v20
-      ansible.builtin.command:
-        cmd: dnf module enable nodejs:20 -y
-      changed_when: true
-
-    - name: Install NodeJS
+    - name: install nodejs
       ansible.builtin.dnf:
         name: nodejs
-        state: latest
+        state: installed
 
-    - name: Add Application User
+    - name: adding applicantion user
       ansible.builtin.user:
         name: expense
-        system: yes
 
     - name: Clean old app content
       ansible.builtin.file:
@@ -48,54 +26,45 @@
       ansible.builtin.file:
         path: /app
         state: directory
-        owner: expense
-        group: expense
-        mode: '0755'
+
 
     - name: Download and extract app content
       ansible.builtin.unarchive:
         src: https://expense-artifacts.s3.amazonaws.com/expense-backend-v2.zip
         dest: /app
         remote_src: yes
-        owner: expense
-        group: expense
 
-    - name: Install NodeJS Dependencies
+    - name: nodejs dependencies
       community.general.npm:
         path: /app
         state: latest
 
-    - name: Copy backend service file
+    - name: copy backend servicefile
       ansible.builtin.copy:
         src: backend.service
         dest: /etc/systemd/system/backend.service
-        mode: '0644'
-      notify: Restart Backend Service
 
-    - name: Install MySQL client
+    - name: install mysql client
       ansible.builtin.dnf:
         name: mysql
-        state: present
+        state: installed
 
-    - name: Load Database Schema
+
+    - name: load schema
       community.mysql.mysql_db:
         state: import
-        name: all  # Change this to your actual database name
+        name: all
         target: /app/schema/backend.sql
         login_user: root
         login_password: ExpenseApp@1
         login_host: mysql-dev.pdops.shop
 
-    - name: Ensure Backend Service is Running
-      ansible.builtin.systemd_service:
-        name: backend
-        state: started
-        enabled: yes
-        daemon-reload: yes
-
-  handlers:
-    - name: Restart Backend Service
+    - name: start backend service
       ansible.builtin.systemd_service:
         name: backend
         state: restarted
+        enabled: yes
+        demon_reload: yes
+
+
 
