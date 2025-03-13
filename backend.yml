@@ -2,20 +2,22 @@
   hosts: all
   become: yes
   tasks:
-    - name: Disabla default nodejs
+    - name: Disable default Node.js module
       ansible.builtin.shell: dnf module disable nodejs -y
 
-    - name: enable nodejs
-      ansible.builtin.shell: dnf module disable nodejs -y
+    - name: Enable Node.js module
+      ansible.builtin.shell: dnf module enable nodejs -y
 
-    - name: install nodejs
+    - name: Install Node.js
       ansible.builtin.dnf:
         name: nodejs
         state: installed
 
-    - name: adding applicantion user
+    - name: Add application user
       ansible.builtin.user:
         name: expense
+        shell: /bin/bash
+        create_home: yes
 
     - name: Clean old app content
       ansible.builtin.file:
@@ -27,44 +29,39 @@
         path: /app
         state: directory
 
-
     - name: Download and extract app content
       ansible.builtin.unarchive:
         src: https://expense-artifacts.s3.amazonaws.com/expense-backend-v2.zip
         dest: /app
         remote_src: yes
 
-    - name: nodejs dependencies
+    - name: Install Node.js dependencies
       community.general.npm:
         path: /app
         state: latest
 
-    - name: copy backend servicefile
+    - name: Copy backend service file
       ansible.builtin.copy:
         src: backend.service
         dest: /etc/systemd/system/backend.service
 
-    - name: install mysql client
+    - name: Install MySQL client
       ansible.builtin.dnf:
         name: mysql
         state: installed
 
-
-    - name: load schema
+    - name: Load schema into MySQL
       community.mysql.mysql_db:
         state: import
-        name: all
+        name: all  # Replace with the actual database name
         target: /app/schema/backend.sql
         login_user: root
         login_password: ExpenseApp@1
         login_host: mysql-dev.pdops.shop
 
-    - name: start backend service
-      ansible.builtin.systemd_service:
+    - name: Start backend service
+      ansible.builtin.systemd:
         name: backend
         state: restarted
         enabled: yes
-        demon_reload: yes
-
-
-
+        daemon_reload: yes
