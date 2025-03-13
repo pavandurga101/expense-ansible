@@ -5,10 +5,25 @@
     ansible_python_interpreter: /usr/bin/python3  # Optional: Set Python interpreter
 
   tasks:
-    - name: Install PyMySQL (for Python 3.X)
+    - name: Ensure EPEL repository is enabled
       ansible.builtin.dnf:
-        name: python3-pymysql
+        name: epel-release
         state: present
+
+    - name: Install PyMySQL (using pip if not available via dnf)
+      block:
+        - name: Attempt to install PyMySQL via dnf
+          ansible.builtin.dnf:
+            name: python3-pymysql
+            state: present
+          ignore_errors: yes
+          register: pymysql_install
+
+        - name: Install PyMySQL via pip if dnf fails
+          ansible.builtin.pip:
+            name: pymysql
+            executable: pip3
+          when: pymysql_install is failed
 
     - name: Disable default Node.js module
       ansible.builtin.shell: dnf module disable nodejs -y
